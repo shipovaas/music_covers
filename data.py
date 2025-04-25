@@ -30,36 +30,29 @@ def process_and_save_tracks(client, chart_tracks, audio_folder, cover_folder, ou
 
         for chart_track in batch:
             track = chart_track.track
-            track_id = f"{track.id}:{track.albums[0].id}"  # ID трека
-            file_path = f"{audio_folder}/{track.title}.mp3"  # Путь для сохранения аудиофайла
-
-            # Скачиваем 30-секундный фрагмент трека
+            track_id = f"{track.id}:{track.albums[0].id}" 
+            file_path = f"{audio_folder}/{track.title}.mp3"
             if track.available:
                 download_track_preview(client, track_id, file_path)
             else:
                 print(f"Трек {track.title} недоступен для скачивания.")
                 continue
 
-            # Скачиваем обложку
             cover_url = track.albums[0].cover_uri if track.albums and hasattr(track.albums[0], 'cover_uri') else None
             if cover_url:
-                # Преобразуем URL обложки в полный URL
-                cover_url = f"https://{cover_url.replace('%%', '400x400')}"  # Размер обложки: 400x400
+                cover_url = f"https://{cover_url.replace('%%', '400x400')}"
                 cover_path = f"{cover_folder}/{track.title}.jpg"
                 download_cover(cover_url, cover_path)
             else:
                 print(f"Обложка для трека {track.title} недоступна.")
                 cover_path = None
 
-            # Проверяем, существует ли файл
             if os.path.exists(file_path):
-                # Извлекаем аудиофичи
                 audio_features = extract_audio_features(file_path)
             else:
                 print(f"Файл {file_path} не найден. Пропускаем.")
                 audio_features = None
 
-            # Формируем данные о треке
             track_data = {
                 "title": track.title,
                 "artists": [artist.name for artist in track.artists],
@@ -67,35 +60,27 @@ def process_and_save_tracks(client, chart_tracks, audio_folder, cover_folder, ou
                 "duration_seconds": track.duration_ms // 1000,
                 "genre": track.albums[0].genre if track.albums and hasattr(track.albums[0], 'genre') else None,
                 "release_date": track.albums[0].release_date if track.albums and hasattr(track.albums[0], 'release_date') else None,
-                "cover_path": cover_path,  # Добавляем путь к обложке
+                "cover_path": cover_path, 
                 "audio_features": audio_features
             }
 
             processed_tracks.append(track_data)
 
-        # Нормализуем данные
         processed_tracks = process_tracks_data(processed_tracks)
 
-        # Сохраняем обработанные треки в файл
         save_tracks_to_json(processed_tracks, output_file)
         print(f"Сохранено {len(processed_tracks)} треков в файл {output_file}")
 
 
 
-# Инициализируем клиент
 client = init_client()
 
-# Получаем треки из мирового чарта
 chart_tracks = get_chart_tracks(client, chart_type='world')
 
-# Папка для сохранения аудиофайлов
 audio_folder = "data/audio"
 
-# Папка для сохранения обложек
 cover_folder = "data/covers"
 
-# Файл для сохранения данных
 output_file = "data/chart_tracks_with_audio.json"
 
-# Обрабатываем и сохраняем треки
 process_and_save_tracks(client, chart_tracks, audio_folder, cover_folder, output_file, batch_size=100)
