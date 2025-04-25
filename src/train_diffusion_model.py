@@ -8,7 +8,6 @@ import json
 from PIL import Image
 from torchvision import transforms, models
 
-# --- Гиперпараметры ---
 EPOCHS = 200
 BATCH_SIZE = 16
 LEARNING_RATE = 1e-4
@@ -16,10 +15,8 @@ IMG_SIZE = 128
 EMBEDDING_DIM = 256
 FEATURE_DIM = 8
 
-# Определяем устройство (GPU или CPU)
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-# --- Датасет ---
 class DiffusionDataset(Dataset):
     def __init__(self, data_dir, metadata_file):
         self.data_dir = data_dir
@@ -57,43 +54,39 @@ class DiffusionDataset(Dataset):
         return embedding, track_features, image
 
 
-# --- Модель ---
 class UNetGenerator(nn.Module):
     def __init__(self, embedding_dim, feature_dim, img_size):
         super(UNetGenerator, self).__init__()
         self.img_size = img_size
 
-        # Входной слой для объединения embedding и track_features
         self.fc = nn.Linear(embedding_dim + feature_dim, 512 * (img_size // 32) * (img_size // 32))
 
-        # Downsampling (сжатие)
         self.encoder = nn.Sequential(
-            nn.Conv2d(512, 256, kernel_size=4, stride=2, padding=1),  # 4x4 -> 2x2
+            nn.Conv2d(512, 256, kernel_size=4, stride=2, padding=1), 
             nn.InstanceNorm2d(256),
             nn.ReLU(),
-            nn.Conv2d(256, 128, kernel_size=3, stride=1, padding=1),  # 2x2 -> 2x2 (без уменьшения)
+            nn.Conv2d(256, 128, kernel_size=3, stride=1, padding=1),  
             nn.InstanceNorm2d(128),
             nn.ReLU(),
-            nn.Conv2d(128, 64, kernel_size=3, stride=1, padding=1),  # 2x2 -> 2x2 (без уменьшения)
+            nn.Conv2d(128, 64, kernel_size=3, stride=1, padding=1),  
             nn.InstanceNorm2d(64),
             nn.ReLU(),
         )
 
-        # Upsampling (генерация)
         self.decoder = nn.Sequential(
-            nn.ConvTranspose2d(64, 128, kernel_size=4, stride=2, padding=1),  # 2x2 -> 4x4
+            nn.ConvTranspose2d(64, 128, kernel_size=4, stride=2, padding=1),  
             nn.InstanceNorm2d(128),
             nn.ReLU(),
-            nn.ConvTranspose2d(128, 256, kernel_size=4, stride=2, padding=1),  # 4x4 -> 8x8
+            nn.ConvTranspose2d(128, 256, kernel_size=4, stride=2, padding=1),  
             nn.InstanceNorm2d(256),
             nn.ReLU(),
-            nn.ConvTranspose2d(256, 128, kernel_size=4, stride=2, padding=1),  # 8x8 -> 16x16
+            nn.ConvTranspose2d(256, 128, kernel_size=4, stride=2, padding=1),
             nn.InstanceNorm2d(128),
             nn.ReLU(),
-            nn.ConvTranspose2d(128, 64, kernel_size=4, stride=2, padding=1),  # 16x16 -> 32x32
+            nn.ConvTranspose2d(128, 64, kernel_size=4, stride=2, padding=1), 
             nn.InstanceNorm2d(64),
             nn.ReLU(),
-            nn.ConvTranspose2d(64, 32, kernel_size=4, stride=2, padding=1),  # 32x32 -> 64x64
+            nn.ConvTranspose2d(64, 32, kernel_size=4, stride=2, padding=1),  
             nn.InstanceNorm2d(32),
             nn.ReLU(),
             nn.ConvTranspose2d(32, 3, kernel_size=4, stride=2, padding=1),  # 64x64 -> 128x128
