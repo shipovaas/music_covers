@@ -1,5 +1,5 @@
-from yandex_music import Client
-ZeIoAAG8XodFgAPFMEyPvS92EBSB2SE'):
+from yandex_music import Client:
+def init_client(token):
     """
     Инициализирует клиент Яндекс Музыки.
 
@@ -7,11 +7,8 @@ ZeIoAAG8XodFgAPFMEyPvS92EBSB2SE'):
     :return: Инициализированный клиент.
     """
     if token:
-        # Авторизация с токеном
-        client = Client(token).init()
         print("Клиент успешно авторизован с токеном.")
     else:
-        # Без авторизации
         client = Client().init()
         print("Клиент инициализирован без авторизации.")
     return client
@@ -40,8 +37,8 @@ def get_chart_tracks(client, chart_type='world'):
     :return: Список треков или пустой список, если произошла ошибка.
     """
     try:
-        chart_info = client.chart(chart_type)  # Получаем объект ChartInfo
-        chart_tracks = chart_info.chart.tracks  # Доступ к трекам через chart.tracks
+        chart_info = client.chart(chart_type) 
+        chart_tracks = chart_info.chart.tracks 
         return chart_tracks
     except Exception as e:
         print(f"Ошибка при получении чарта: {e}")
@@ -62,22 +59,17 @@ def search_tracks_with_pagination(client, query, limit=10000):
 
     try:
         while len(tracks) < limit:
-            # Выполняем поиск с учетом пагинации
             search_result = client.search(query, type_='track', page=page)
             if not search_result.tracks or not search_result.tracks.results:
-                break  # Если треков больше нет, выходим из цикла
+                break 
 
-            # Добавляем треки из текущей страницы
             tracks.extend(search_result.tracks.results)
 
-            # Увеличиваем номер страницы
             page += 1
 
-            # Если достигли лимита, обрываем цикл
             if len(tracks) >= limit:
                 break
 
-        # Ограничиваем список до указанного лимита
         return tracks[:limit]
 
     except Exception as e:
@@ -114,7 +106,7 @@ def get_tracks_from_album(client, album_id):
     try:
         album = client.albums_with_tracks(album_id)
         if album and album.volumes:
-            return album.volumes[0]  # Возвращаем список треков из первого тома альбома
+            return album.volumes[0]
         else:
             print(f"Альбом с ID {album_id} не содержит треков.")
             return []
@@ -182,8 +174,8 @@ def get_all_albums_tracks(client, limit=100):
     """
     all_tracks = []
     try:
-        landing = client.landing('new-releases')  # Получаем новые релизы
-        albums = landing.blocks[0].entities[:limit]  # Ограничиваем количество альбомов
+        landing = client.landing('new-releases')
+        albums = landing.blocks[0].entities[:limit]
         for album in albums:
             album_tracks = get_tracks_from_album(client, album.data.id)
             all_tracks.extend(album_tracks)
@@ -202,7 +194,7 @@ def get_all_playlists_tracks(client, limit=100):
     """
     all_tracks = []
     try:
-        playlists = client.users_playlists_list()[:limit]  # Ограничиваем количество плейлистов
+        playlists = client.users_playlists_list()[:limit]  
         for playlist in playlists:
             playlist_tracks = get_tracks_from_playlist(client, playlist.kind)
             all_tracks.extend(playlist_tracks)
