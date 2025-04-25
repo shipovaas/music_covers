@@ -89,12 +89,11 @@ class UNetGenerator(nn.Module):
             nn.ConvTranspose2d(64, 32, kernel_size=4, stride=2, padding=1),  
             nn.InstanceNorm2d(32),
             nn.ReLU(),
-            nn.ConvTranspose2d(32, 3, kernel_size=4, stride=2, padding=1),  # 64x64 -> 128x128
-            nn.Sigmoid(),  # Нормализация значений в диапазон [0, 1]
+            nn.ConvTranspose2d(32, 3, kernel_size=4, stride=2, padding=1),  
+            nn.Sigmoid(),
         )
 
     def forward(self, embedding, track_features):
-        # Объединяем embedding и track_features
         x = torch.cat([embedding, track_features], dim=1)
         x = self.fc(x)
         x = x.view(-1, 512, self.img_size // 32, self.img_size // 32)  # Преобразуем в тензор для Conv2d
@@ -103,7 +102,6 @@ class UNetGenerator(nn.Module):
         return x
 
 
-# --- Перцептуальная функция потерь ---
 class PerceptualLoss(nn.Module):
     def __init__(self):
         super(PerceptualLoss, self).__init__()
@@ -113,26 +111,21 @@ class PerceptualLoss(nn.Module):
         self.vgg = vgg
         self.mse = nn.MSELoss()
 
-        # Нормализация для VGG16
         self.normalize = transforms.Normalize(
             mean=[0.485, 0.456, 0.406],
             std=[0.229, 0.224, 0.225]
         )
 
     def forward(self, generated, target):
-        # Нормализуем входные данные
         generated = self.normalize(generated)
         target = self.normalize(target)
 
-        # Извлекаем признаки
         gen_features = self.vgg(generated)
         target_features = self.vgg(target)
 
-        # Вычисляем MSE между признаками
         return self.mse(gen_features, target_features)
 
 
-# --- Обучение ---
 def train_diffusion_model(data_dir, metadata_file, model_save_path):
     dataset = DiffusionDataset(data_dir, metadata_file)
     dataloader = DataLoader(dataset, batch_size=BATCH_SIZE, shuffle=True)
@@ -161,7 +154,6 @@ def train_diffusion_model(data_dir, metadata_file, model_save_path):
     print(f"Модель сохранена в {model_save_path}")
 
 
-# --- Основной блок ---
 if __name__ == "__main__":
     DATA_DIR = "data/diffusion_data/"
     METADATA_FILE = "data/chart_tracks_with_audio.json"
