@@ -9,7 +9,6 @@ from sklearn.metrics import accuracy_score
 from utils.data_preparation import load_and_prepare_data
 
 
-# Определение архитектуры полносвязной нейросети
 class AudioNN(nn.Module):
     def __init__(self, input_size, output_size):
         super(AudioNN, self).__init__()
@@ -46,20 +45,15 @@ def train_model(X_train, y_train, input_size, output_size, num_epochs=20, learni
     :param learning_rate: float, скорость обучения.
     :return: обученная модель.
     """
-    # Создание модели
     model = AudioNN(input_size, output_size)
 
-    # Функция потерь и оптимизатор
     criterion = nn.CrossEntropyLoss()
     optimizer = optim.Adam(model.parameters(), lr=learning_rate)
 
-    # Обучение модели
     for epoch in range(num_epochs):
-        # Прямой проход
         outputs = model(X_train)
         loss = criterion(outputs, y_train)
 
-        # Обратный проход
         optimizer.zero_grad()
         loss.backward()
         optimizer.step()
@@ -110,7 +104,6 @@ def save_track_metadata(labels, index_to_label, track_ids, track_titles, artists
     :param artists: list, исполнители треков.
     :param output_path: str, путь для сохранения метаданных.
     """
-    # Преобразуем числовые метки обратно в жанры и добавляем информацию о треках
     metadata = [
         {
             "index": idx,
@@ -122,12 +115,10 @@ def save_track_metadata(labels, index_to_label, track_ids, track_titles, artists
         for idx, track_id, track_title, artist in zip(labels, track_ids, track_titles, artists)
     ]
 
-    # Сохраняем метаданные в JSON
     with open(output_path, 'w', encoding='utf-8') as f:
         json.dump(metadata, f, indent=4, ensure_ascii=False)
     print(f"Список треков сохранен в '{output_path}'")
 
-    # Сохраняем только идентификаторы треков в отдельный файл
     ids_output_path = output_path.replace("_tracks.json", "_ids.json")
     with open(ids_output_path, 'w', encoding='utf-8') as f:
         json.dump(track_ids, f, indent=4, ensure_ascii=False)
@@ -135,47 +126,36 @@ def save_track_metadata(labels, index_to_label, track_ids, track_titles, artists
 
 
 def main():
-    # Путь к JSON-файлу с данными
     json_path = 'data/chart_tracks_with_audio.json'
 
-    # Загрузка данных
     features, labels, track_ids, track_titles, artists = load_and_prepare_data(json_path)
 
-    # Преобразование меток (жанров) в числовые индексы
-    unique_labels = list(set(labels))  # Уникальные жанры
+    unique_labels = list(set(labels))
     label_to_index = {label: idx for idx, label in enumerate(unique_labels)}
     index_to_label = {idx: label for label, idx in label_to_index.items()}
     labels = [label_to_index[label] for label in labels]
 
-    # Разделение данных на обучающую и тестовую выборки
     X_train, X_test, y_train, y_test = train_test_split(features, labels, test_size=0.2, random_state=42)
 
-    # Преобразование данных в тензоры
     X_train = torch.tensor(X_train, dtype=torch.float32)
     y_train = torch.tensor(y_train, dtype=torch.long)
     X_test = torch.tensor(X_test, dtype=torch.float32)
     y_test = torch.tensor(y_test, dtype=torch.long)
 
-    # Параметры модели
-    input_size = X_train.shape[1]  # Количество аудиофич (например, 8)
-    output_size = len(unique_labels)  # Количество жанров
+    input_size = X_train.shape[1]
+    output_size = len(unique_labels) 
 
-    # Обучение модели
     model = train_model(X_train, y_train, input_size, output_size, num_epochs=20, learning_rate=0.001)
 
-    # Оценка модели
     accuracy = evaluate_model(model, X_test, y_test)
     print(f"Точность на тестовой выборке: {accuracy:.4f}")
 
-    # Сохранение скрытых представлений
     hidden_representations_path = 'hidden_representations.npy'
     save_hidden_representations(model, features, hidden_representations_path)
 
-    # Сохранение метаданных треков
     track_metadata_path = 'hidden_representations_tracks.json'
     save_track_metadata(labels, index_to_label, track_ids, track_titles, artists, track_metadata_path)
 
-    # Сохранение обученной модели
     model_path = 'audio_nn.pth'
     torch.save(model.state_dict(), model_path)
     print(f"Модель сохранена в '{model_path}'")
